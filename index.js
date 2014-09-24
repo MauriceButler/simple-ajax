@@ -14,10 +14,10 @@ function parseQueryString(url){
 
     if(urlParts.length>1){
 
-        var queryStringData = urlParts.pop().split("&");
+        var queryStringData = urlParts.pop().split('&');
 
         for(var i = 0; i < queryStringData.length; i++) {
-            var parts = queryStringData[i].split("="),
+            var parts = queryStringData[i].split('='),
                 key = window.unescape(parts[0]),
                 value = window.unescape(parts[1]);
 
@@ -56,14 +56,13 @@ function Ajax(settings){
 
     ajax.settings = settings;
     ajax.request = new window.XMLHttpRequest();
-    ajax.settings.method = ajax.settings.method || "get";
+    ajax.settings.method = ajax.settings.method || 'get';
 
     if(ajax.settings.cors){
         //http://www.html5rocks.com/en/tutorials/cors/
-        if ("withCredentials" in ajax.request) {
-            // all good.
-
-        } else if (typeof XDomainRequest != "undefined") {
+        if ('withCredentials' in ajax.request) {
+            ajax.request.withCredentials = true;
+        } else if (typeof XDomainRequest !== 'undefined') {
             // Otherwise, check if XDomainRequest.
             // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
             ajax.request = new window.XDomainRequest();
@@ -71,8 +70,6 @@ function Ajax(settings){
             // Otherwise, CORS is not supported by the browser.
             ajax.emit('error', new Error('Cors is not supported by this browser'));
         }
-    }else{
-        ajax.request = new window.XMLHttpRequest();
     }
 
     if(ajax.settings.cache === false){
@@ -92,11 +89,11 @@ function Ajax(settings){
         ajax.settings.data = null;
     }
 
-    ajax.request.addEventListener("progress", function(event){
+    ajax.request.addEventListener('progress', function(event){
         ajax.emit('progress', event);
     }, false);
 
-    ajax.request.addEventListener("load", function(event){
+    ajax.request.addEventListener('load', function(event){
         var data = event.target.responseText;
 
         if(ajax.settings.dataType && ajax.settings.dataType.toLowerCase() === 'json'){
@@ -115,19 +112,19 @@ function Ajax(settings){
 
     }, false);
 
-    ajax.request.addEventListener("error", function(event){
+    ajax.request.addEventListener('error', function(event){
         ajax.emit('error', event);
     }, false);
 
-    ajax.request.addEventListener("abort", function(event){
+    ajax.request.addEventListener('abort', function(event){
         ajax.emit('abort', event);
     }, false);
 
-    ajax.request.addEventListener("loadend", function(event){
+    ajax.request.addEventListener('loadend', function(event){
         ajax.emit('complete', event);
     }, false);
 
-    ajax.request.open(ajax.settings.method || "get", ajax.settings.url, true);
+    ajax.request.open(ajax.settings.method || 'get', ajax.settings.url, true);
 
     // Set default headers
     if(ajax.settings.contentType !== false){
