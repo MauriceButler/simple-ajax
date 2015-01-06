@@ -101,6 +101,10 @@ function Ajax(settings){
                 data = undefined;
             }else{
                 data = tryParseJson(data);
+                if(data instanceof Error){
+                    ajax.emit('error', event, data);
+                    return;
+                }
             }
         }
 
