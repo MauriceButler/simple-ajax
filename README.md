@@ -1,6 +1,6 @@
 #simple-ajax
 
-Simple ajax module with no dependencies.
+Simple ajax module.
 
 
 ##Usage

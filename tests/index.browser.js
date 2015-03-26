@@ -1,5 +1,6 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var EventEmitter = require('events').EventEmitter;
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var EventEmitter = require('events').EventEmitter,
+    queryString = require('query-string');
 
 function tryParseJson(data){
     try{
@@ -7,38 +8,6 @@ function tryParseJson(data){
     }catch(error){
         return error;
     }
-}
-
-function parseQueryString(url){
-    var urlParts = url.split('?'),
-        result = {};
-
-    if(urlParts.length>1){
-
-        var queryStringData = urlParts.pop().split("&");
-
-        for(var i = 0; i < queryStringData.length; i++) {
-            var parts = queryStringData[i].split("="),
-                key = window.unescape(parts[0]),
-                value = window.unescape(parts[1]);
-
-            result[key] = value;
-        }
-    }
-
-    return result;
-}
-
-function toQueryString(data){
-    var queryString = '';
-
-    for(var key in data){
-        if(data.hasOwnProperty(key) && data[key] !== undefined){
-            queryString += (queryString.length ? '&' : '?') + key + '=' + data[key];
-        }
-    }
-
-    return queryString;
 }
 
 function Ajax(settings){
@@ -57,14 +26,13 @@ function Ajax(settings){
 
     ajax.settings = settings;
     ajax.request = new window.XMLHttpRequest();
-    ajax.settings.method = ajax.settings.method || "get";
+    ajax.settings.method = ajax.settings.method || 'get';
 
     if(ajax.settings.cors){
         //http://www.html5rocks.com/en/tutorials/cors/
-        if ("withCredentials" in ajax.request) {
-            // all good.
-
-        } else if (typeof XDomainRequest != "undefined") {
+        if ('withCredentials' in ajax.request) {
+            ajax.request.withCredentials = true;
+        } else if (typeof XDomainRequest !== 'undefined') {
             // Otherwise, check if XDomainRequest.
             // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
             ajax.request = new window.XDomainRequest();
@@ -72,8 +40,6 @@ function Ajax(settings){
             // Otherwise, CORS is not supported by the browser.
             ajax.emit('error', new Error('Cors is not supported by this browser'));
         }
-    }else{
-        ajax.request = new window.XMLHttpRequest();
     }
 
     if(ajax.settings.cache === false){
@@ -82,22 +48,23 @@ function Ajax(settings){
     }
 
     if(ajax.settings.method.toLowerCase() === 'get' && typeof ajax.settings.data === 'object'){
-        queryStringData = parseQueryString(ajax.settings.url);
+        var urlParts = ajax.settings.url.split('?');
+
+        queryStringData = queryString.parse(urlParts[1]);
+
         for(var key in ajax.settings.data){
-            if(ajax.settings.data.hasOwnProperty(key)){
-                queryStringData[key] = ajax.settings.data[key];
-            }
+            queryStringData[key] = ajax.settings.data[key];
         }
 
-        ajax.settings.url  = ajax.settings.url.split('?').shift() + toQueryString(queryStringData);
+        ajax.settings.url = urlParts[0] + '?' + queryString.stringify(queryStringData);
         ajax.settings.data = null;
     }
 
-    ajax.request.addEventListener("progress", function(event){
+    ajax.request.addEventListener('progress', function(event){
         ajax.emit('progress', event);
     }, false);
 
-    ajax.request.addEventListener("load", function(event){
+    ajax.request.addEventListener('load', function(event){
         var data = event.target.responseText;
 
         if(ajax.settings.dataType && ajax.settings.dataType.toLowerCase() === 'json'){
@@ -105,6 +72,10 @@ function Ajax(settings){
                 data = undefined;
             }else{
                 data = tryParseJson(data);
+                if(data instanceof Error){
+                    ajax.emit('error', event, data);
+                    return;
+                }
             }
         }
 
@@ -116,19 +87,19 @@ function Ajax(settings){
 
     }, false);
 
-    ajax.request.addEventListener("error", function(event){
+    ajax.request.addEventListener('error', function(event){
         ajax.emit('error', event);
     }, false);
 
-    ajax.request.addEventListener("abort", function(event){
+    ajax.request.addEventListener('abort', function(event){
         ajax.emit('abort', event);
     }, false);
 
-    ajax.request.addEventListener("loadend", function(event){
+    ajax.request.addEventListener('loadend', function(event){
         ajax.emit('complete', event);
     }, false);
 
-    ajax.request.open(ajax.settings.method || "get", ajax.settings.url, true);
+    ajax.request.open(ajax.settings.method || 'get', ajax.settings.url, true);
 
     // Set default headers
     if(ajax.settings.contentType !== false){
@@ -155,10 +126,84 @@ Ajax.prototype.send = function(){
 };
 
 module.exports = Ajax;
-},{"events":3}],2:[function(require,module,exports){
+},{"events":4,"query-string":2}],2:[function(require,module,exports){
+/*!
+	query-string
+	Parse and stringify URL query strings
+	https://github.com/sindresorhus/query-string
+	by Sindre Sorhus
+	MIT License
+*/
+(function () {
+	'use strict';
+	var queryString = {};
+
+	queryString.parse = function (str) {
+		if (typeof str !== 'string') {
+			return {};
+		}
+
+		str = str.trim().replace(/^(\?|#)/, '');
+
+		if (!str) {
+			return {};
+		}
+
+		return str.trim().split('&').reduce(function (ret, param) {
+			var parts = param.replace(/\+/g, ' ').split('=');
+			var key = parts[0];
+			var val = parts[1];
+
+			key = decodeURIComponent(key);
+			// missing `=` should be `null`:
+			// http://w3.org/TR/2012/WD-url-20120524/#collect-url-parameters
+			val = val === undefined ? null : decodeURIComponent(val);
+
+			if (!ret.hasOwnProperty(key)) {
+				ret[key] = val;
+			} else if (Array.isArray(ret[key])) {
+				ret[key].push(val);
+			} else {
+				ret[key] = [ret[key], val];
+			}
+
+			return ret;
+		}, {});
+	};
+
+	queryString.stringify = function (obj) {
+		return obj ? Object.keys(obj).map(function (key) {
+			var val = obj[key];
+
+			if (Array.isArray(val)) {
+				return val.map(function (val2) {
+					return encodeURIComponent(key) + '=' + encodeURIComponent(val2);
+				}).join('&');
+			}
+
+			return encodeURIComponent(key) + '=' + encodeURIComponent(val);
+		}).join('&') : '';
+	};
+
+	if (typeof define === 'function' && define.amd) {
+		define(function() { return queryString; });
+	} else if (typeof module !== 'undefined' && module.exports) {
+		module.exports = queryString;
+	} else {
+		window.queryString = queryString;
+	}
+})();
+
+},{}],3:[function(require,module,exports){
 var Ajax = require('../');
 
-var ajax = new Ajax('https://api.github.com/users/octocat/orgs');
+var ajax = new Ajax({
+    url: 'https://api.github.com/users/octocat/orgs?thing=majigger',
+    data: {
+        foo: ['a', 'b', 'c'],
+        stuff: 'meh'
+    }
+});
 
 ajax.on('success', function(event) {
     console.log('success', event);
@@ -173,7 +218,7 @@ ajax.on('complete', function(event) {
 });
 
 ajax.send();
-},{"../":1}],3:[function(require,module,exports){
+},{"../":1}],4:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -233,10 +278,8 @@ EventEmitter.prototype.emit = function(type) {
       er = arguments[1];
       if (er instanceof Error) {
         throw er; // Unhandled 'error' event
-      } else {
-        throw TypeError('Uncaught, unspecified "error" event.');
       }
-      return false;
+      throw TypeError('Uncaught, unspecified "error" event.');
     }
   }
 
@@ -321,7 +364,10 @@ EventEmitter.prototype.addListener = function(type, listener) {
                     'leak detected. %d listeners added. ' +
                     'Use emitter.setMaxListeners() to increase limit.',
                     this._events[type].length);
-      console.trace();
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
     }
   }
 
@@ -475,4 +521,4 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}]},{},[2])
+},{}]},{},[3]);

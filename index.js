@@ -1,4 +1,5 @@
-var EventEmitter = require('events').EventEmitter;
+var EventEmitter = require('events').EventEmitter,
+    queryString = require('query-string');
 
 function tryParseJson(data){
     try{
@@ -6,38 +7,6 @@ function tryParseJson(data){
     }catch(error){
         return error;
     }
-}
-
-function parseQueryString(url){
-    var urlParts = url.split('?'),
-        result = {};
-
-    if(urlParts.length>1){
-
-        var queryStringData = urlParts.pop().split('&');
-
-        for(var i = 0; i < queryStringData.length; i++) {
-            var parts = queryStringData[i].split('='),
-                key = window.unescape(parts[0]),
-                value = window.unescape(parts[1]);
-
-            result[key] = value;
-        }
-    }
-
-    return result;
-}
-
-function toQueryString(data){
-    var queryString = '';
-
-    for(var key in data){
-        if(data.hasOwnProperty(key) && data[key] !== undefined){
-            queryString += (queryString.length ? '&' : '?') + key + '=' + data[key];
-        }
-    }
-
-    return queryString;
 }
 
 function Ajax(settings){
@@ -78,14 +47,15 @@ function Ajax(settings){
     }
 
     if(ajax.settings.method.toLowerCase() === 'get' && typeof ajax.settings.data === 'object'){
-        queryStringData = parseQueryString(ajax.settings.url);
+        var urlParts = ajax.settings.url.split('?');
+
+        queryStringData = queryString.parse(urlParts[1]);
+
         for(var key in ajax.settings.data){
-            if(ajax.settings.data.hasOwnProperty(key)){
-                queryStringData[key] = ajax.settings.data[key];
-            }
+            queryStringData[key] = ajax.settings.data[key];
         }
 
-        ajax.settings.url  = ajax.settings.url.split('?').shift() + toQueryString(queryStringData);
+        ajax.settings.url = urlParts[0] + '?' + queryString.stringify(queryStringData);
         ajax.settings.data = null;
     }
 
