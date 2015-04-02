@@ -9,6 +9,11 @@ function tryParseJson(data){
     }
 }
 
+function timeout(){
+   this.request.abort();
+   this.emit('timeout');
+}
+
 function Ajax(settings){
     var queryStringData,
         ajax = this;
@@ -95,6 +100,7 @@ function Ajax(settings){
     }, false);
 
     ajax.request.addEventListener('loadend', function(event){
+        clearTimeout(this._requestTimeout);
         ajax.emit('complete', event);
     }, false);
 
@@ -120,7 +126,12 @@ function Ajax(settings){
 }
 
 Ajax.prototype = Object.create(EventEmitter.prototype);
+
 Ajax.prototype.send = function(){
+    this._requestTimeout = setTimeout(
+        timeout.bind(this),
+        this.settings.timeout || 120000
+    );
     this.request.send(this.settings.data && this.settings.data);
 };
 
