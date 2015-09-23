@@ -33,11 +33,9 @@ function Ajax(settings){
     ajax.settings.method = ajax.settings.method || 'get';
 
     if(ajax.settings.cors){
-        //http://www.html5rocks.com/en/tutorials/cors/
         if ('withCredentials' in ajax.request) {
-            ajax.request.withCredentials = true;
+            ajax.request.withCredentials = !!settings.withCredentials;
         } else if (typeof XDomainRequest !== 'undefined') {
-            // Otherwise, check if XDomainRequest.
             // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
             ajax.request = new window.XDomainRequest();
         } else {
