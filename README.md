@@ -19,7 +19,7 @@ Simple ajax module.
 
     var ajax = new Ajax({
             url: 'https://api.github.com/users/octocat/orgs',
-            methos: 'GET',
+            method: 'GET',
             headers: {
                 myCustomHeader: 'my custom header value'
             }
