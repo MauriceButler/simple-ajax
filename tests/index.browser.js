@@ -425,7 +425,7 @@ function Ajax(settings){
     }, false);
 
     ajax.request.addEventListener('abort', function(event){
-        ajax.emit('error', new Error('Connection Aborted'));
+        ajax.emit('error', event, new Error('Connection Aborted'));
         ajax.emit('abort', event);
     }, false);
 
