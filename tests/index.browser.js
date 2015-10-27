@@ -1,224 +1,4 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var EventEmitter = require('events').EventEmitter,
-    queryString = require('query-string');
-
-function tryParseJson(data){
-    try{
-        return JSON.parse(data);
-    }catch(error){
-        return error;
-    }
-}
-
-function Ajax(settings){
-    var queryStringData,
-        ajax = this;
-
-    if(typeof settings === 'string'){
-        settings = {
-            url: settings
-        };
-    }
-
-    if(typeof settings !== 'object'){
-        settings = {};
-    }
-
-    ajax.settings = settings;
-    ajax.request = new window.XMLHttpRequest();
-    ajax.settings.method = ajax.settings.method || 'get';
-
-    if(ajax.settings.cors){
-        //http://www.html5rocks.com/en/tutorials/cors/
-        if ('withCredentials' in ajax.request) {
-            ajax.request.withCredentials = true;
-        } else if (typeof XDomainRequest !== 'undefined') {
-            // Otherwise, check if XDomainRequest.
-            // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
-            ajax.request = new window.XDomainRequest();
-        } else {
-            // Otherwise, CORS is not supported by the browser.
-            ajax.emit('error', new Error('Cors is not supported by this browser'));
-        }
-    }
-
-    if(ajax.settings.cache === false){
-        ajax.settings.data = ajax.settings.data || {};
-        ajax.settings.data._ = new Date().getTime();
-    }
-
-    if(ajax.settings.method.toLowerCase() === 'get' && typeof ajax.settings.data === 'object'){
-        var urlParts = ajax.settings.url.split('?');
-
-        queryStringData = queryString.parse(urlParts[1]);
-
-        for(var key in ajax.settings.data){
-            queryStringData[key] = ajax.settings.data[key];
-        }
-
-        ajax.settings.url = urlParts[0] + '?' + queryString.stringify(queryStringData);
-        ajax.settings.data = null;
-    }
-
-    ajax.request.addEventListener('progress', function(event){
-        ajax.emit('progress', event);
-    }, false);
-
-    ajax.request.addEventListener('load', function(event){
-        var data = event.target.responseText;
-
-        if(ajax.settings.dataType && ajax.settings.dataType.toLowerCase() === 'json'){
-            if(data === ''){
-                data = undefined;
-            }else{
-                data = tryParseJson(data);
-                if(data instanceof Error){
-                    ajax.emit('error', event, data);
-                    return;
-                }
-            }
-        }
-
-        if(event.target.status >= 400){
-            ajax.emit('error', event, data);
-        } else {
-            ajax.emit('success', event, data);
-        }
-
-    }, false);
-
-    ajax.request.addEventListener('error', function(event){
-        ajax.emit('error', event);
-    }, false);
-
-    ajax.request.addEventListener('abort', function(event){
-        ajax.emit('abort', event);
-    }, false);
-
-    ajax.request.addEventListener('loadend', function(event){
-        ajax.emit('complete', event);
-    }, false);
-
-    ajax.request.open(ajax.settings.method || 'get', ajax.settings.url, true);
-
-    // Set default headers
-    if(ajax.settings.contentType !== false){
-        ajax.request.setRequestHeader('Content-Type', ajax.settings.contentType || 'application/json; charset=utf-8');
-    }
-    ajax.request.setRequestHeader('X-Requested-With', ajax.settings.requestedWith || 'XMLHttpRequest');
-    if(ajax.settings.auth){
-        ajax.request.setRequestHeader('Authorization', ajax.settings.auth);
-    }
-
-    // Set custom headers
-    for(var headerKey in ajax.settings.headers){
-        ajax.request.setRequestHeader(headerKey, ajax.settings.headers[headerKey]);
-    }
-
-    if(ajax.settings.processData !== false && ajax.settings.dataType === 'json'){
-        ajax.settings.data = JSON.stringify(ajax.settings.data);
-    }
-}
-
-Ajax.prototype = Object.create(EventEmitter.prototype);
-Ajax.prototype.send = function(){
-    this.request.send(this.settings.data && this.settings.data);
-};
-
-module.exports = Ajax;
-},{"events":4,"query-string":2}],2:[function(require,module,exports){
-/*!
-	query-string
-	Parse and stringify URL query strings
-	https://github.com/sindresorhus/query-string
-	by Sindre Sorhus
-	MIT License
-*/
-(function () {
-	'use strict';
-	var queryString = {};
-
-	queryString.parse = function (str) {
-		if (typeof str !== 'string') {
-			return {};
-		}
-
-		str = str.trim().replace(/^(\?|#)/, '');
-
-		if (!str) {
-			return {};
-		}
-
-		return str.trim().split('&').reduce(function (ret, param) {
-			var parts = param.replace(/\+/g, ' ').split('=');
-			var key = parts[0];
-			var val = parts[1];
-
-			key = decodeURIComponent(key);
-			// missing `=` should be `null`:
-			// http://w3.org/TR/2012/WD-url-20120524/#collect-url-parameters
-			val = val === undefined ? null : decodeURIComponent(val);
-
-			if (!ret.hasOwnProperty(key)) {
-				ret[key] = val;
-			} else if (Array.isArray(ret[key])) {
-				ret[key].push(val);
-			} else {
-				ret[key] = [ret[key], val];
-			}
-
-			return ret;
-		}, {});
-	};
-
-	queryString.stringify = function (obj) {
-		return obj ? Object.keys(obj).map(function (key) {
-			var val = obj[key];
-
-			if (Array.isArray(val)) {
-				return val.map(function (val2) {
-					return encodeURIComponent(key) + '=' + encodeURIComponent(val2);
-				}).join('&');
-			}
-
-			return encodeURIComponent(key) + '=' + encodeURIComponent(val);
-		}).join('&') : '';
-	};
-
-	if (typeof define === 'function' && define.amd) {
-		define(function() { return queryString; });
-	} else if (typeof module !== 'undefined' && module.exports) {
-		module.exports = queryString;
-	} else {
-		window.queryString = queryString;
-	}
-})();
-
-},{}],3:[function(require,module,exports){
-var Ajax = require('../');
-
-var ajax = new Ajax({
-    url: 'https://api.github.com/users/octocat/orgs?thing=majigger',
-    data: {
-        foo: ['a', 'b', 'c'],
-        stuff: 'meh'
-    }
-});
-
-ajax.on('success', function(event) {
-    console.log('success', event);
-});
-
-ajax.on('error', function(event) {
-    console.log('error', event);
-});
-
-ajax.on('complete', function(event) {
-    console.log('complete', event);
-});
-
-ajax.send();
-},{"../":1}],4:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -521,4 +301,234 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}]},{},[3]);
+},{}],2:[function(require,module,exports){
+var EventEmitter = require('events').EventEmitter,
+    queryString = require('query-string');
+
+function tryParseJson(data){
+    try{
+        return JSON.parse(data);
+    }catch(error){
+        return error;
+    }
+}
+
+function timeout(){
+   this.request.abort();
+   this.emit('timeout');
+}
+
+function Ajax(settings){
+    var queryStringData,
+        ajax = this;
+
+    if(typeof settings === 'string'){
+        settings = {
+            url: settings
+        };
+    }
+
+    if(typeof settings !== 'object'){
+        settings = {};
+    }
+
+    ajax.settings = settings;
+    ajax.request = new window.XMLHttpRequest();
+    ajax.settings.method = ajax.settings.method || 'get';
+
+    if(ajax.settings.cors){
+        if ('withCredentials' in ajax.request) {
+            ajax.request.withCredentials = !!settings.withCredentials;
+        } else if (typeof XDomainRequest !== 'undefined') {
+            // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
+            ajax.request = new window.XDomainRequest();
+        } else {
+            // Otherwise, CORS is not supported by the browser.
+            ajax.emit('error', new Error('Cors is not supported by this browser'));
+        }
+    }
+
+    if(ajax.settings.cache === false){
+        ajax.settings.data = ajax.settings.data || {};
+        ajax.settings.data._ = new Date().getTime();
+    }
+
+    if(ajax.settings.method.toLowerCase() === 'get' && typeof ajax.settings.data === 'object'){
+        var urlParts = ajax.settings.url.split('?');
+
+        queryStringData = queryString.parse(urlParts[1]);
+
+        for(var key in ajax.settings.data){
+            queryStringData[key] = ajax.settings.data[key];
+        }
+
+        ajax.settings.url = urlParts[0] + '?' + queryString.stringify(queryStringData);
+        ajax.settings.data = null;
+    }
+
+    ajax.request.addEventListener('progress', function(event){
+        ajax.emit('progress', event);
+    }, false);
+
+    ajax.request.addEventListener('load', function(event){
+        var data = event.target.responseText;
+
+        if(ajax.settings.dataType && ajax.settings.dataType.toLowerCase() === 'json'){
+            if(data === ''){
+                data = undefined;
+            }else{
+                data = tryParseJson(data);
+                if(data instanceof Error){
+                    ajax.emit('error', event, data);
+                    return;
+                }
+            }
+        }
+
+        if(event.target.status >= 400){
+            ajax.emit('error', event, data);
+        } else {
+            ajax.emit('success', event, data);
+        }
+
+    }, false);
+
+    ajax.request.addEventListener('error', function(event){
+        ajax.emit('error', event);
+    }, false);
+
+    ajax.request.addEventListener('abort', function(event){
+        ajax.emit('error', event, new Error('Connection Aborted'));
+        ajax.emit('abort', event);
+    }, false);
+
+    ajax.request.addEventListener('loadend', function(event){
+        clearTimeout(this._requestTimeout);
+        ajax.emit('complete', event);
+    }, false);
+
+    ajax.request.open(ajax.settings.method || 'get', ajax.settings.url, true);
+
+    // Set default headers
+    if(ajax.settings.contentType !== false){
+        ajax.request.setRequestHeader('Content-Type', ajax.settings.contentType || 'application/json; charset=utf-8');
+    }
+    ajax.request.setRequestHeader('X-Requested-With', ajax.settings.requestedWith || 'XMLHttpRequest');
+    if(ajax.settings.auth){
+        ajax.request.setRequestHeader('Authorization', ajax.settings.auth);
+    }
+
+    // Set custom headers
+    for(var headerKey in ajax.settings.headers){
+        ajax.request.setRequestHeader(headerKey, ajax.settings.headers[headerKey]);
+    }
+
+    if(ajax.settings.processData !== false && ajax.settings.dataType === 'json'){
+        ajax.settings.data = JSON.stringify(ajax.settings.data);
+    }
+}
+
+Ajax.prototype = Object.create(EventEmitter.prototype);
+
+Ajax.prototype.send = function(){
+    this._requestTimeout = setTimeout(
+        timeout.bind(this),
+        this.settings.timeout || 120000
+    );
+    this.request.send(this.settings.data && this.settings.data);
+};
+
+module.exports = Ajax;
+},{"events":1,"query-string":3}],3:[function(require,module,exports){
+/*!
+	query-string
+	Parse and stringify URL query strings
+	https://github.com/sindresorhus/query-string
+	by Sindre Sorhus
+	MIT License
+*/
+(function () {
+	'use strict';
+	var queryString = {};
+
+	queryString.parse = function (str) {
+		if (typeof str !== 'string') {
+			return {};
+		}
+
+		str = str.trim().replace(/^(\?|#)/, '');
+
+		if (!str) {
+			return {};
+		}
+
+		return str.trim().split('&').reduce(function (ret, param) {
+			var parts = param.replace(/\+/g, ' ').split('=');
+			var key = parts[0];
+			var val = parts[1];
+
+			key = decodeURIComponent(key);
+			// missing `=` should be `null`:
+			// http://w3.org/TR/2012/WD-url-20120524/#collect-url-parameters
+			val = val === undefined ? null : decodeURIComponent(val);
+
+			if (!ret.hasOwnProperty(key)) {
+				ret[key] = val;
+			} else if (Array.isArray(ret[key])) {
+				ret[key].push(val);
+			} else {
+				ret[key] = [ret[key], val];
+			}
+
+			return ret;
+		}, {});
+	};
+
+	queryString.stringify = function (obj) {
+		return obj ? Object.keys(obj).map(function (key) {
+			var val = obj[key];
+
+			if (Array.isArray(val)) {
+				return val.map(function (val2) {
+					return encodeURIComponent(key) + '=' + encodeURIComponent(val2);
+				}).join('&');
+			}
+
+			return encodeURIComponent(key) + '=' + encodeURIComponent(val);
+		}).join('&') : '';
+	};
+
+	if (typeof define === 'function' && define.amd) {
+		define(function() { return queryString; });
+	} else if (typeof module !== 'undefined' && module.exports) {
+		module.exports = queryString;
+	} else {
+		self.queryString = queryString;
+	}
+})();
+
+},{}],4:[function(require,module,exports){
+var Ajax = require('../');
+
+var ajax = new Ajax({
+    url: 'https://api.github.com/users/octocat/orgs?thing=majigger',
+    data: {
+        foo: ['a', 'b', 'c'],
+        stuff: 'meh'
+    }
+});
+
+ajax.on('success', function(event) {
+    console.log('success', event);
+});
+
+ajax.on('error', function(event) {
+    console.log('error', event);
+});
+
+ajax.on('complete', function(event) {
+    console.log('complete', event);
+});
+
+ajax.send();
+},{"../":2}]},{},[4]);
