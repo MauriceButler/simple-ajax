@@ -1,7 +1,7 @@
 {
   "name": "simple-ajax",
-  "version": "1.0.0",
-  "description": "Simple ajax  module with no dependencies",
+  "version": "2.2.1",
+  "description": "Simple ajax module",
   "main": "index.js",
   "scripts": {
     "test": "browserify tests/index.js -b > tests/index.browser.js; google-chrome ./tests/index.html"
@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/MauriceButler/simple-ajax/issues"
   },
-  "homepage": "https://github.com/MauriceButler/simple-ajax"
+  "homepage": "https://github.com/MauriceButler/simple-ajax",
+  "dependencies": {
+    "query-string": "^1.0.0"
+  }
 }

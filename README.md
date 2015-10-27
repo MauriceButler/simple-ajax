@@ -1,6 +1,6 @@
 #simple-ajax
 
-Simple ajax module with no dependencies.
+Simple ajax module.
 
 
 ##Usage
@@ -19,7 +19,7 @@ Simple ajax module with no dependencies.
 
     var ajax = new Ajax({
             url: 'https://api.github.com/users/octocat/orgs',
-            methos: 'GET',
+            method: 'GET',
             headers: {
                 myCustomHeader: 'my custom header value'
             }
