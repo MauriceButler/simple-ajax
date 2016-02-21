@@ -1,6 +1,6 @@
 {
   "name": "simple-ajax",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "Simple ajax module",
   "main": "index.js",
   "scripts": {
