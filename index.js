@@ -109,7 +109,9 @@ function Ajax(settings){
     if(ajax.settings.contentType !== false){
         ajax.request.setRequestHeader('Content-Type', ajax.settings.contentType || 'application/json; charset=utf-8');
     }
-    ajax.request.setRequestHeader('X-Requested-With', ajax.settings.requestedWith || 'XMLHttpRequest');
+    if(ajax.settings.requestedWith !== false) {
+        ajax.request.setRequestHeader('X-Requested-With', ajax.settings.requestedWith || 'XMLHttpRequest');
+    }
     if(ajax.settings.auth){
         ajax.request.setRequestHeader('Authorization', ajax.settings.auth);
     }
