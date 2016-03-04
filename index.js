@@ -29,7 +29,7 @@ function Ajax(settings){
     }
 
     ajax.settings = settings;
-    ajax.request = new window.XMLHttpRequest();
+    ajax.request = new XMLHttpRequest();
     ajax.settings.method = ajax.settings.method || 'get';
 
     if(ajax.settings.cors){
@@ -37,7 +37,7 @@ function Ajax(settings){
             ajax.request.withCredentials = !!settings.withCredentials;
         } else if (typeof XDomainRequest !== 'undefined') {
             // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
-            ajax.request = new window.XDomainRequest();
+            ajax.request = new XDomainRequest();
         } else {
             // Otherwise, CORS is not supported by the browser.
             ajax.emit('error', new Error('Cors is not supported by this browser'));
