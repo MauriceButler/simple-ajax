@@ -58,7 +58,9 @@ function Ajax(settings){
             queryStringData[key] = ajax.settings.data[key];
         }
 
-        ajax.settings.url = urlParts[0] + '?' + queryString.stringify(queryStringData);
+        var parsedQueryStringData = queryString.stringify(queryStringData);
+
+        ajax.settings.url = urlParts[0] + (parsedQueryStringData ? '?' + parsedQueryStringData : '');
         ajax.settings.data = null;
     }
 
