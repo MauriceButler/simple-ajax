@@ -101,7 +101,7 @@ function Ajax(settings){
     }, false);
 
     ajax.request.addEventListener('loadend', function(event){
-        clearTimeout(ajax.request._requestTimeout);
+        clearTimeout(ajax._requestTimeout);
         ajax.emit('complete', event);
     }, false);
 
