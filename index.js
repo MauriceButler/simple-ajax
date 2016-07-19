@@ -32,10 +32,8 @@ function Ajax(settings){
     ajax.request = new XMLHttpRequest();
     ajax.settings.method = ajax.settings.method || 'get';
 
-    if(ajax.settings.cors){
-        if ('withCredentials' in ajax.request) {
-            ajax.request.withCredentials = !!settings.withCredentials;
-        } else if (typeof XDomainRequest !== 'undefined') {
+    if(ajax.settings.cors && !'withCredentials' in ajax.request){
+        if (typeof XDomainRequest !== 'undefined') {
             // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
             ajax.request = new XDomainRequest();
         } else {
@@ -107,6 +105,10 @@ function Ajax(settings){
 
     ajax.request.open(ajax.settings.method || 'get', ajax.settings.url, true);
 
+    if(ajax.settings.cors && 'withCredentials' in ajax.request) {
+        ajax.request.withCredentials = !!settings.withCredentials;
+    }
+
     // Set default headers
     if(ajax.settings.contentType !== false){
         ajax.request.setRequestHeader('Content-Type', ajax.settings.contentType || 'application/json; charset=utf-8');
@@ -131,11 +133,16 @@ function Ajax(settings){
 Ajax.prototype = Object.create(EventEmitter.prototype);
 
 Ajax.prototype.send = function(){
-    this._requestTimeout = setTimeout(
-        timeout.bind(this),
-        this.settings.timeout || 120000
+    var ajax = this;
+
+    ajax._requestTimeout = setTimeout(
+        function(){
+            timeout.apply(ajax, []);
+        },
+        ajax.settings.timeout || 120000
     );
-    this.request.send(this.settings.data && this.settings.data);
+
+    ajax.request.send(ajax.settings.data && ajax.settings.data);
 };
 
 module.exports = Ajax;
