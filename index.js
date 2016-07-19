@@ -133,13 +133,16 @@ function Ajax(settings){
 Ajax.prototype = Object.create(EventEmitter.prototype);
 
 Ajax.prototype.send = function(){
-    var _that = this;
-    this._requestTimeout = setTimeout(function(){
-            timeout.apply(_that, []);
+    var ajax = this;
+
+    ajax._requestTimeout = setTimeout(
+        function(){
+            timeout.apply(ajax, []);
         },
-        this.settings.timeout || 120000
+        ajax.settings.timeout || 120000
     );
-    this.request.send(this.settings.data && this.settings.data);
+
+    ajax.request.send(ajax.settings.data && ajax.settings.data);
 };
 
 module.exports = Ajax;
